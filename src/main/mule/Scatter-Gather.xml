@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="8a34a1d8-3a1b-44a2-a862-90131c1c4d6e" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root@123" database="mytestdb" />
+	</db:config>
+	<flow name="Scatter-GatherFlow" doc:id="4c77f0c6-cd41-4123-89ed-e52e89cee8de" >
+		<http:listener doc:name="Listener" doc:id="11e80232-7d0f-4eac-a027-a1169eabc9d0" config-ref="HTTP_Listener_config" path="/scattergatter"/>
+		<logger level="INFO" doc:name="InitLogger" doc:id="000a500f-d1f0-4cc9-841a-85175cbf1d89" message="#[payload]" category="InitLogger"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="6a31027d-3a4a-4a4e-b55d-6acc73f465c7" >
+			<route >
+				<db:select doc:name="Select" doc:id="698a7fab-986d-41e6-b112-4f6cb759d414" config-ref="Database_Config">
+					<db:sql ><![CDATA[select * from myemp;]]></db:sql>
+				</db:select>
+				<ee:transform doc:name="Transform Message" doc:id="2698972a-fa94-435a-89dd-a01b0086bb5d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[payload]" doc:name="Set Variable" doc:id="d8204e13-4ba6-4297-86cf-e141bcba9081" variableName="dbResp"/>
+				<logger level="INFO" doc:name="OneLogger" doc:id="c032b2a0-7642-4ccb-801e-327a7c8264d9" category="OneLogger" message="#[vars.dbResp]" />
+			</route>
+			<route >
+				<file:read doc:name="Read" doc:id="4dfb0e25-4366-40dd-a62e-fc31fbd7e704" path="C:\Users\cholig\OneDrive - Subaru of America\Documents\MulesoftTraining\File\Input\Emp_details.csv"/>
+				<ee:transform doc:name="Transform Message" doc:id="1b506a55-a36e-4970-8e8e-ac35722df36d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[payload]" doc:name="Set Variable" doc:id="c3877167-e5e9-4977-a1d7-983815dfe0a5" variableName="fileresp"/>
+				<logger level="INFO" doc:name="SecondLogger" doc:id="03f249ce-f32b-4922-a567-b82fd213fdf0" category="SecondLogger" message="#[vars.fileresp]" />
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="77f0592f-2b56-4010-9bb8-773254c8bd12" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	
+	"Dboutput": vars.dbResp,
+	"Fileoutput": vars.fileresp
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="FinalLogger" doc:id="73f67db6-ab06-44d0-8b34-c1bb53017045" message="#[payload]" category="FinalLogger"/>
+	</flow>
+</mule>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="mule-flow-control-ChoiceRouter" doc:id="ebfd4ad9-a6cc-4509-a7aa-65eebf6ee127" >
+		<http:listener doc:name="Listener" doc:id="4d3a3a7e-3997-4bce-b73a-40c3c62c2327" config-ref="HTTP_Listener_config" path="/choicerouter/{num}"/>
+		<logger level="INFO" doc:name="InitLogger" doc:id="eb089bfc-5c33-400c-9277-7034abb66449" message="#[attributes.uriParamas.num]" category="InitLogger"/>
+		<set-variable value="#[attributes.uriParams.num]" doc:name="Set Variable" doc:id="83c42345-b1b0-4dbf-a6b6-21f6dd7f639f" variableName="number"/>
+		<choice doc:name="Choice" doc:id="071274e2-4ac3-40e3-80e9-0baa358a2776" >
+			<when expression="#[vars.number &lt;= 10]">
+				<set-payload value='"i am in when condition"' doc:name="Set Payload" doc:id="ab287f8e-6d0b-4b61-9df0-b51f06a81cf1" />
+			</when>
+			<otherwise >
+				<set-payload value='"i am in default condition"' doc:name="Set Payload" doc:id="e38e6c26-9e1e-495f-b794-d018b4b3a16a" />
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="EndLogger" doc:id="382cbfb4-0ed7-41d5-a9fe-7645b5806938" message="#[payload]" category="EndLogger"/>
+	</flow>
+</mule>
