@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="1f77bf04-d081-47d0-b0e7-d56af7515ded" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root@123" database="mytestdb" />
+	</db:config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="48ab2f40-52ab-46db-9cd5-41e69e6ce2df" >
+		<file:connection workingDir="C:\Users\cholig\OneDrive - Subaru of America\Documents\MulesoftTraining\File" />
+	</file:config>
+	<flow name="mule-sfdc-db-pocFlow" doc:id="a11565d2-3738-4c53-b43e-c3b5d85f9717" >
+		<http:listener doc:name="Listener" doc:id="a4bc0e85-88b2-483a-8233-026a0276c867" config-ref="HTTP_Listener_config" path="/testPOC"/>
+		<ee:transform doc:name="Transform Message" doc:id="79382801-9dc9-483a-b425-718f4e0e1ed6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map(item) ->
+{
+	
+	empname: item.empName,
+	empphone: item.empPhone as Number,
+	empemail: item.empEmail,
+	empskills: item.empSkills
+
+	
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="b536661c-d6b3-4a60-b6b8-c6bf62357e38" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into sdfc_data  (empname, empphone, empemail, empskills)  values(:empname, :empphone, :empemail, :empskills)]]></db:sql>
+		</db:bulk-insert>
+		<db:select doc:name="Select" doc:id="ba980232-f311-4999-ae27-e2174af10867" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from sdfc_data]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="cbca022c-c1c5-4242-be08-fe1c42ad0e1f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map(item) ->
+{
+	
+	Name: item.empname,
+	emp_phone__c: item.empphone as String,
+	emp_mail__c: item.empemail,
+	emp_skills__c: item.empskills
+
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="5df86bdb-4213-4190-ac75-c63781879fb8" message="#[payload]" category="&gt;&gt;&gt;&gt;Logger&gt;&gt;&gt;"/>
+		<salesforce:create type="emp_profile__c" doc:name="SDFC" doc:id="894ba21c-c3f8-466b-a0d9-072d8e07da80" config-ref="Salesforce_Config" />
+		<ee:transform doc:name="Response" doc:id="655370bf-87bd-4bc4-a558-8a8bc201c78c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn= "everywhere"
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

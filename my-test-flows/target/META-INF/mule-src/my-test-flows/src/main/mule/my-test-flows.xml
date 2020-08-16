@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="64ff3193-eff1-4a5d-8373-b4eacd686a44" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="my-subflow-Flow" doc:id="30fe94dd-00e6-465d-bc6e-5a8f2f31ce18" >
+		<http:listener doc:name="Listener" doc:id="d73fcb6f-84e0-4821-a16a-eb30c5734673" config-ref="HTTP_Listener_config" path="/testsubflow/{color}"/>
+		<logger level="INFO" doc:name="Init" doc:id="864cca50-67cf-4c0f-a549-70c78263d713" message="#[attributes.uriParams.color]" category="Init Logger"/>
+		<set-variable value="#[attributes.uriParams.color]" doc:name="Set Color" doc:id="8dc7cfe7-000f-429e-847e-f4a4a7e935fe" variableName="color"/>
+		<choice doc:name="Choice" doc:id="0817ce54-2547-4b40-adf5-2bfc9fb0fa7e" >
+			<when expression="#[vars.color == 'yellow']">
+				<set-payload value="'Fruit name is :Mango'" doc:name="Set Fruit Name" doc:id="ba88c414-c613-46bb-a931-d7352380dca6" />
+			</when>
+			<when expression="#[vars.color == 'green']">
+				<flow-ref doc:name="Flow Reference" doc:id="a8ebb6f5-f5a3-4a00-939c-2499e0bb00bf" name="my-test-flowsSub_Flow" target="vTar"/>
+				<logger level="INFO" doc:name="AfterSubFlow" doc:id="2eeea4fa-f536-4032-bfb0-2db5e32c75ba" message="#[vars.vTar]" category="AfterSubFlow"/>
+
+				
+			</when>
+			<when expression="#[vars.color == 'red']">
+				<set-payload value="'Fruit name is : Apple'" doc:name="Set Fruit Name" doc:id="67ed859b-bb4e-40c6-bc78-9162033940a1" />
+			</when>
+			<when expression="#[vars.color == 'blue']">
+				<set-payload value="'Fruit name is : berry'" doc:name="Set Fruit Name" doc:id="833acce7-fae8-488c-9d82-011d7c51c388" />
+			</when>
+			<otherwise >
+				<set-payload value="'Enter any color:yellow Or red Or green Or blue'" doc:name="No fruit Matching" doc:id="c137aee0-541c-4e8c-be3e-b37e5b3cab4a" />
+			</otherwise>
+		</choice>
+		<set-payload value="#[vars.vTar]" doc:name="Set Payload" doc:id="b074b3fd-84c1-4663-8110-7fe311e06d79" />
+		<logger level="INFO" doc:name="EndLogger" doc:id="f587a882-b0b8-4a1a-9b12-4cbcd67859a3" message="#[payload]" category="EndLogger"/>
+	</flow>
+	<sub-flow name="my-test-flowsSub_Flow" doc:id="7cc35664-6cd9-4ad8-8093-555dc0670ef8" >
+	<logger level="INFO" doc:name="InSubFlow" doc:id="cdfbab15-2e12-41fa-a73f-5b2be26b3109" message="#[payload]" category="InSubFlow"/>
+		<set-payload value="'Fruit name is : watermelon'" doc:name="Set Fruit Name" doc:id="2cbd1f2d-d7a6-4baa-9abe-e4081008fba7" />
+		<logger level="INFO" doc:name="SubFlowEndLogger" doc:id="d3548f9e-c32a-4b30-87c1-d954b3cb6a89" message="#[payload]" category="SubFlowEndLogger"/>
+	
+</sub-flow>
+	
+</mule>

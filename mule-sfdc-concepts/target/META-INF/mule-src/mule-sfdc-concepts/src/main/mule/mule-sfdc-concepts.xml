@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="a4704e1d-db41-41a4-ab6b-4d442d5d6c41" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="3bc677ee-c531-41d7-9882-1b786449a216" >
+		<salesforce:basic-connection username="mytraining.1988@gmail.com" password="August@2020" securityToken="WtUbcEANY4e77oZ5JdKS6KiSZ" />
+	</salesforce:sfdc-config>
+	<flow name="mule-sfdc-conceptsFlow" doc:id="fb1bb444-921e-4b52-a9b2-c986dec06eaa" >
+		<http:listener doc:name="Listener" doc:id="12603453-0f38-4220-a540-33d89b1862a8" config-ref="HTTP_Listener_config" path="/testSFDC" allowedMethods="POST"/>
+		<ee:transform doc:name="Transform Message" doc:id="c0dff134-90e3-440d-91c0-4ab5fa195fd6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map(item) ->
+{
+	
+	Name: item.empName,
+	emp_phone__c: item.empPhone,
+	emp_mail__c: item.empEmail,
+	emp_skills__c: item.empSkills
+
+	
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create type="emp_profile__c" doc:name="Create" doc:id="b8876525-b68e-4d88-ab36-6051ac82664b" config-ref="Salesforce_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="44f9a7ef-10d7-475e-aa95-cf4569bf42dc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn= "everywhere"
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

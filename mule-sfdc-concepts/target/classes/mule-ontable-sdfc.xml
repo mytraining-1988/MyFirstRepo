@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<sub-flow name="Store-CSV" doc:id="b8102ed5-9096-45f2-a6da-af62745b681b" >
+		<file:write doc:name="Write" doc:id="babd104b-dec0-4469-ae49-12c140d411ba" config-ref="File_Config" path="Output\sdfc.csv" mode="APPEND" />
+	</sub-flow>
+	<flow name="mule-onTable-sdfc" doc:id="a82dd4ac-f160-4f18-b2c4-099818be056a" >
+		<db:listener table="sdfc_emp" doc:name="On Table Row" doc:id="4ed23e51-b9da-45eb-94e8-40946c37fabb" config-ref="Database_Config" watermarkColumn="empid" idColumn="empid">
+			<scheduling-strategy >
+				<fixed-frequency frequency="60" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</db:listener>
+		<ee:transform doc:name="Transform Message" doc:id="67b45d92-7567-492f-8483-070bfd66352a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[payload]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Copy_of_Transform Message" doc:id="79f104dc-4ded-4320-925b-87decc441097" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map(item) ->
+{
+	Name: item.empname,
+	emp_phone__c: item.empphone as String,
+	emp_mail__c: item.empemail,
+	emp_skills__c: item.empskills
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create type="emp_profile__c" doc:name="Copy_of_SDFC" doc:id="4735943f-4563-4d31-b5ab-2a9d08d2e1fd" config-ref="Salesforce_Config" />
+	
+</flow>
+	<flow name="mule-ontable-sdfcFlow" doc:id="efa86a53-2688-495a-9f3e-3d4e3d97efad" >
+		<http:listener doc:name="Listener" doc:id="6228abd7-44ad-4a22-b808-6326e825278c" config-ref="HTTP_Listener_config" path="/testONTABLE" allowedMethods="POST"/>
+		<ee:transform doc:name="Transform_Input_Bulk_Insert" doc:id="b1a1d2e2-2ffc-4292-850d-82bba83ad26f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map(item) ->
+{
+	empid:item.empId,
+	empname: item.empName,
+	empphone: item.empPhone as Number,
+	empemail: item.empEmail,
+	empskills: item.empSkills
+
+	
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:bulk-insert doc:name="Bulk insert_SDFC_EMP Table" doc:id="18863350-5d74-45f7-ac88-3f8c215027ae" config-ref="Database_Config">
+			<db:sql><![CDATA[insert into sdfc_emp  (empid,empname, empphone, empemail, empskills)  values(:empid,:empname, :empphone, :empemail, :empskills)]]></db:sql>
+		</db:bulk-insert>
+		<ee:transform doc:name="Transform Message" doc:id="332eaf33-5fbc-4cc2-96d6-ee7dc18764c1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Status": 200,
+	"Message": "Success"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	
+	
+</mule>
